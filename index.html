@@ -77,20 +77,56 @@
         </header>
 
         <!-- 학생 계정 전환 바 (학생 모드일 때만 표시) -->
-        <div id="studentSelectorBar" class="bg-slate-50 px-5 py-2.5 border-b border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                <i data-lucide="user-circle" class="w-4 h-4 text-blue-500"></i> 내 통장 선택:
+        <div id="studentSelectorBar" class="hidden bg-slate-50 px-5 py-2.5 border-b border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+                <span><strong id="loggedInStudentBadge" class="text-slate-900">학생</strong>님 본인 인증됨</span>
             </span>
-            <select id="currentUserSelect" onchange="switchStudent(this.value)" class="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <!-- JS로 동적 렌더링 -->
-            </select>
+            <button onclick="logoutStudent()" class="text-xs font-bold text-slate-500 hover:text-rose-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> 로그아웃
+            </button>
         </div>
 
         <!-- 메인 스크롤 영역 -->
         <main class="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50/50" id="mainContent">
+
+            <!-- ================= 학생 개인 로그인 잠금 화면 ================= -->
+            <div id="studentLoginView" class="h-full flex flex-col justify-center py-4 animate-slide-up">
+                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-md space-y-5 text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-xs">
+                        <i data-lucide="lock-keyhole" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-800">내 통장 로그인</h2>
+                        <p class="text-xs text-slate-500 mt-1">본인 이름을 선택하고 개인 비밀번호를 입력하세요.</p>
+                    </div>
+
+                    <div class="text-left space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">학생 이름 선택</label>
+                            <select id="loginStudentSelect" onchange="onLoginStudentSelectChange()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- JS로 동적 렌더링 -->
+                            </select>
+                        </div>
+
+                        <div id="loginPinStatusBanner" class="text-[11px] bg-blue-50 text-blue-700 p-2.5 rounded-xl font-medium">
+                            비밀번호를 입력해 통장을 열어주세요.
+                        </div>
+
+                        <div>
+                            <label id="loginPinLabel" class="block text-xs font-bold text-slate-600 mb-1">비밀번호 (숫자 4자리)</label>
+                            <input type="password" id="studentLoginPinInput" inputmode="numeric" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter') handleStudentLogin()" class="w-full text-center tracking-widest text-xl font-black border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <button id="studentLoginSubmitBtn" onclick="handleStudentLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md transition active:scale-98">
+                        내 통장 열기
+                    </button>
+                </div>
+            </div>
             
             <!-- ================= 학생 모드 화면 ================= -->
-            <div id="studentView" class="space-y-5">
+            <div id="studentView" class="hidden space-y-5">
                 
                 <!-- 내 계좌 카드 -->
                 <div class="card-gradient rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
@@ -548,19 +584,19 @@
                     <div id="prodCard-deposit" onclick="selectSavingsProduct('deposit')" class="cursor-pointer p-3.5 rounded-2xl border-2 border-blue-600 bg-blue-50/70 transition">
                         <div class="flex items-center justify-between mb-1">
                             <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-bold">정기예금</span>
-                            <span class="text-blue-700 font-black text-sm">연 10%</span>
+                            <span class="text-blue-700 font-black text-sm">연 2.8%</span>
                         </div>
                         <h4 class="font-bold text-slate-800 text-sm">튼튼 정기예금</h4>
-                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">목돈을 한 번에 맡기고 만기 시 10% 이자 지급</p>
+                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">목돈을 한 번에 맡기고 만기 시 2.8% 이자 지급</p>
                     </div>
 
                     <div id="prodCard-installment" onclick="selectSavingsProduct('installment')" class="cursor-pointer p-3.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">자유적금</span>
-                            <span class="text-emerald-700 font-black text-sm">연 15%</span>
+                            <span class="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">정기적금</span>
+                            <span class="text-emerald-700 font-black text-sm">연 3%</span>
                         </div>
-                        <h4 class="font-bold text-slate-800 text-sm">꿈나무 자유적금</h4>
-                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">가입 후에도 언제든 돈을 추가로 모으는 통장</p>
+                        <h4 class="font-bold text-slate-800 text-sm">꿈나무 정기적금</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">가입 후에도 꾸준히 돈을 모아 만기 시 3% 이자 지급</p>
                     </div>
                 </div>
 
@@ -585,7 +621,7 @@
                     <div class="bg-white p-3 rounded-xl border border-blue-100 space-y-1 text-xs">
                         <div class="flex justify-between text-slate-500">
                             <span>적용 금리 (만기 시)</span>
-                            <span id="previewRateText" class="font-bold text-blue-600">10%</span>
+                            <span id="previewRateText" class="font-bold text-blue-600">2.8%</span>
                         </div>
                         <div class="flex justify-between text-slate-500">
                             <span>예상 세전 이자</span>
@@ -756,11 +792,11 @@
         const DEFAULT_DATA = {
             teacherPin: '1234',
             students: [
-                { id: 'stu_1', name: '김민준', accountNumber: '1004-01-0001', balance: 30000 },
-                { id: 'stu_2', name: '이서연', accountNumber: '1004-01-0002', balance: 35000 },
-                { id: 'stu_3', name: '박도윤', accountNumber: '1004-01-0003', balance: 28000 },
-                { id: 'stu_4', name: '최지우', accountNumber: '1004-01-0004', balance: 42000 },
-                { id: 'stu_5', name: '정하준', accountNumber: '1004-01-0005', balance: 30000 }
+                { id: 'stu_1', name: '김민준', accountNumber: '1004-52-0001', balance: 30000 },
+                { id: 'stu_2', name: '이서연', accountNumber: '1004-52-0002', balance: 35000 },
+                { id: 'stu_3', name: '박도윤', accountNumber: '1004-52-0003', balance: 28000 },
+                { id: 'stu_4', name: '최지우', accountNumber: '1004-52-0004', balance: 42000 },
+                { id: 'stu_5', name: '정하준', accountNumber: '1004-52-0005', balance: 30000 }
             ],
             savings: [], // 가입된 예금/적금 상품 목록
             stocks: JSON.parse(JSON.stringify(DEFAULT_STOCKS)), // 5개 분야 상장 주식
@@ -780,60 +816,76 @@
         // 앱 상태 관리
         let appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
         let currentStudentId = 'stu_1';
+        let authenticatedStudentId = null; // 현재 비밀번호 인증을 통과한 학생 ID (null이면 로그인 화면 표시)
         let isTeacherMode = false;
         let currentFilter = 'all';
-        let adminActionType = 'deposit'; // 'deposit' | 'withdraw'
-        let selectedProductType = 'deposit'; // 'deposit' (정기예금 10%) | 'installment' (자유적금 15%)
+        let adminActionType = 'deposit';
+        let selectedProductType = 'deposit';
         let selectedStockId = 'stk_1';
-        let stockOrderSide = 'buy'; // 'buy' | 'sell'
+        let stockOrderSide = 'buy';
 
-        // 클라우드 동기화 변수
-        let db = null;
-        let auth = null;
-        let bankDocRef = null;
+        // 실시간 클라우드 동기화 상태 및 Firebase 인스턴스
         let isCloudReady = false;
+        let db = null;
+        let syncDocRef = null;
+        const STORAGE_KEY = 'smart_class_bank_state_v1';
 
-        // 클라우드 초기화 및 실시간 리스너 연결
-        async function initCloudSync() {
+        function updateSyncBadge(connected, labelText) {
+            const el = document.getElementById('syncStatusText');
+            if (!el) return;
+            if (connected) {
+                el.className = 'text-[11px] text-emerald-600 font-semibold flex items-center gap-1';
+                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${labelText}`;
+            } else {
+                el.className = 'text-[11px] text-blue-600 font-semibold flex items-center gap-1';
+                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ${labelText}`;
+            }
+        }
+
+        function loadLocalFallback() {
             try {
-                if (typeof __firebase_config === 'undefined') {
-                    updateSyncBadge(false, '오프라인 체험 모드');
-                    renderAll();
-                    return;
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    appState = Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), parsed);
                 }
+            } catch (_e) {}
+        }
 
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
+        function saveLocalFallback() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            } catch (_e) {}
+        }
 
-                // 인증 먼저 완료 (RULE 3)
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+        async function initCloudSync() {
+            loadLocalFallback();
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    db = getFirestore(app);
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'smart-class-bank';
+                    syncDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'bankState', 'main');
 
-                if (!auth.currentUser) return;
-
-                // 공용 학급 데이터 경로 (RULE 1: /artifacts/{appId}/public/data/{collectionName})
-                bankDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'class_bank', 'main_ledger');
-
-                // 실시간 동기화 구독
-                onSnapshot(bankDocRef, async (snapshot) => {
-                    if (snapshot.exists()) {
-                        const cloudData = snapshot.data();
-                        appState = {
-                            teacherPin: cloudData.teacherPin || '1234',
-                            students: cloudData.students || [],
-                            savings: cloudData.savings || [],
-                            stocks: (cloudData.stocks && cloudData.stocks.length > 0) ? cloudData.stocks : JSON.parse(JSON.stringify(DEFAULT_STOCKS)),
-                            holdings: cloudData.holdings || [],
-                            latestStockNews: cloudData.latestStockNews || '우리반 증권시장이 개장했습니다! 5개 대표 기업의 주가를 확인해 보세요.',
-                            transactions: cloudData.transactions || []
-                        };
-                        // 현재 선택된 학생이 삭제되었을 경우 첫 번째 학생으로 안전하게 전환
+                    onSnapshot(syncDocRef, async (snap) => {
+                        if (snap.exists()) {
+                            const remote = snap.data();
+                            appState = Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), remote);
+                        } else {
+                            await setDoc(syncDocRef, appState);
+                        }
+                        saveLocalFallback();
+                        // 현재 선택된 학생이 삭제되었을 경우 안전하게 로그아웃 처리
+                        if (authenticatedStudentId && !appState.students.some(s => s.id === authenticatedStudentId)) {
+                            authenticatedStudentId = null;
+                        }
                         if (!appState.students.some(s => s.id === currentStudentId) && appState.students.length > 0) {
                             currentStudentId = appState.students[0].id;
                         }
@@ -844,79 +896,74 @@
                         if (!document.getElementById('stockModal').classList.contains('hidden')) {
                             renderStockModalContent();
                         }
-                    } else {
-                        // 최초 실행 시 초기 데이터 업로드
-                        await setDoc(bankDocRef, DEFAULT_DATA);
-                    }
-                }, (error) => {
-                    console.error("동기화 오류:", error);
-                    updateSyncBadge(false, '동기화 연결 지연');
-                });
-
-            } catch (err) {
-                console.error("초기화 실패:", err);
-                updateSyncBadge(false, '로컬 모드로 실행 중');
-                renderAll();
+                    }, (_err) => {
+                        isCloudReady = false;
+                        updateSyncBadge(false, '로컬 자동 저장 모드');
+                        renderAll();
+                    });
+                    return;
+                }
+            } catch (_err) {
+                // Firebase 미설정 환경에서는 브라우저 간 실시간 동기화(storage 이벤트) + localStorage로 자동 전환
             }
+
+            isCloudReady = false;
+            updateSyncBadge(false, '기기 내 자동 저장 중');
+            window.addEventListener('storage', (e) => {
+                if (e.key === STORAGE_KEY && e.newValue) {
+                    try {
+                        appState = Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), JSON.parse(e.newValue));
+                        renderAll();
+                    } catch (_err) {}
+                }
+            });
+            renderAll();
         }
 
-        function updateSyncBadge(connected, text) {
-            const el = document.getElementById('syncStatusText');
-            if (!el) return;
-            if (connected) {
-                el.className = 'text-[11px] text-emerald-600 font-semibold flex items-center gap-1';
-                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${text}`;
-            } else {
-                el.className = 'text-[11px] text-slate-400 font-medium flex items-center gap-1';
-                el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> ${text}`;
-            }
-        }
-
-        // 클라우드 상태 저장 (트랜잭션으로 동시 송금 충돌 방지)
         async function syncStateToCloud(mutatorFn) {
-            if (!isCloudReady || !db || !bankDocRef || !auth?.currentUser) {
-                mutatorFn(appState);
-                renderAll();
-                return;
+            if (isCloudReady && db && syncDocRef) {
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const sfDoc = await transaction.get(syncDocRef);
+                        const current = sfDoc.exists()
+                            ? Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), sfDoc.data())
+                            : JSON.parse(JSON.stringify(appState));
+                        mutatorFn(current);
+                        transaction.set(syncDocRef, current);
+                        appState = current;
+                    });
+                    saveLocalFallback();
+                    renderAll();
+                    return;
+                } catch (_err) {
+                    // 트랜잭션 실패 시 로컬 상태 업데이트로 안전하게 폴백
+                }
             }
-
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const sfDoc = await transaction.get(bankDocRef);
-                    let currentData = sfDoc.exists() ? sfDoc.data() : JSON.parse(JSON.stringify(DEFAULT_DATA));
-                    mutatorFn(currentData);
-                    transaction.set(bankDocRef, currentData);
-                });
-            } catch (e) {
-                console.error("저장 실패:", e);
-                showToast("네트워크 상태를 확인해 주세요.");
-            }
+            mutatorFn(appState);
+            saveLocalFallback();
+            renderAll();
         }
 
-        // 금액 포맷터
         function formatMoney(num) {
-            return Number(num).toLocaleString('ko-KR');
+            return Number(num || 0).toLocaleString('ko-KR');
         }
 
-        // 현재 시간 문자열 생성
         function getCurrentTimeStr() {
             const now = new Date();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hour = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            return `${month}.${day} ${hour}:${min}`;
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
         }
 
-        // 커스텀 토스트 메시지 표시
-        let toastTimeout;
         function showToast(msg) {
-            const toast = document.getElementById('toastBox');
-            document.getElementById('toastMessage').textContent = msg;
-            toast.classList.remove('hidden');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.add('hidden');
+            const box = document.getElementById('toastBox');
+            const msgEl = document.getElementById('toastMessage');
+            if (!box || !msgEl) return;
+            msgEl.textContent = msg;
+            box.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
             }, 2600);
         }
 
@@ -925,29 +972,121 @@
             renderStudentSelector();
             if (isTeacherMode) {
                 renderTeacherDashboard();
+            } else if (!authenticatedStudentId) {
+                showStudentLoginScreen();
             } else {
+                showAuthenticatedStudentScreen();
                 renderStudentDashboard();
             }
             lucide.createIcons();
         }
 
-        // 상단 학생 선택 드롭다운 렌더링
+        // 로그인 화면 표시 및 드롭다운 렌더링
         function renderStudentSelector() {
-            const select = document.getElementById('currentUserSelect');
-            select.innerHTML = appState.students.map(s => 
-                `<option value="${s.id}" ${s.id === currentStudentId ? 'selected' : ''}>${s.name} (${s.accountNumber.slice(-4)})</option>`
+            const loginSelect = document.getElementById('loginStudentSelect');
+            if (!loginSelect) return;
+            const prevVal = loginSelect.value || currentStudentId;
+            loginSelect.innerHTML = appState.students.map(s => 
+                `<option value="${s.id}" ${s.id === prevVal ? 'selected' : ''}>${s.name} (${s.accountNumber.slice(-4)})</option>`
             ).join('');
+            onLoginStudentSelectChange();
         }
 
-        // 학생 전환
-        function switchStudent(studentId) {
-            currentStudentId = studentId;
-            renderStudentDashboard();
-            showToast(`${getCurrentStudent().name} 학생의 통장으로 전환했습니다.`);
+        function onLoginStudentSelectChange() {
+            const loginSelect = document.getElementById('loginStudentSelect');
+            if (!loginSelect) return;
+            const selectedId = loginSelect.value;
+            const stu = appState.students.find(s => s.id === selectedId);
+            const banner = document.getElementById('loginPinStatusBanner');
+            const label = document.getElementById('loginPinLabel');
+            const btn = document.getElementById('studentLoginSubmitBtn');
+
+            if (stu && !stu.pin) {
+                banner.className = 'text-[11px] bg-amber-50 text-amber-800 border border-amber-200/80 p-2.5 rounded-xl font-medium leading-relaxed';
+                banner.innerHTML = `✨ <strong>첫 접속 환영합니다!</strong> 앞으로 나만 쓸 <strong>비밀번호(숫자 4자리)</strong>를 새로 정해 입력해 주세요.`;
+                label.textContent = '새 개인 비밀번호 설정 (숫자 4자리)';
+                btn.textContent = '비밀번호 등록하고 통장 열기';
+            } else {
+                banner.className = 'text-[11px] bg-blue-50 text-blue-700 p-2.5 rounded-xl font-medium';
+                banner.textContent = '본인이 설정한 개인 비밀번호를 입력해 통장을 열어주세요.';
+                label.textContent = '비밀번호 (숫자 4자리)';
+                btn.textContent = '내 통장 열기';
+            }
+        }
+
+        function showStudentLoginScreen() {
+            document.getElementById('studentLoginView').classList.remove('hidden');
+            document.getElementById('studentView').classList.add('hidden');
+            document.getElementById('studentSelectorBar').classList.add('hidden');
+            onLoginStudentSelectChange();
+        }
+
+        function showAuthenticatedStudentScreen() {
+            document.getElementById('studentLoginView').classList.add('hidden');
+            document.getElementById('studentView').classList.remove('hidden');
+            document.getElementById('studentSelectorBar').classList.remove('hidden');
+            const stu = getCurrentStudent();
+            if (stu) {
+                document.getElementById('loggedInStudentBadge').textContent = stu.name;
+            }
+        }
+
+        // 학생 로그인 및 최초 비밀번호 설정 처리
+        async function handleStudentLogin() {
+            const selectedId = document.getElementById('loginStudentSelect').value;
+            const inputPin = document.getElementById('studentLoginPinInput').value.trim();
+            const student = appState.students.find(s => s.id === selectedId);
+
+            if (!student) {
+                showToast('학생을 선택해 주세요.');
+                return;
+            }
+
+            if (inputPin.length < 4) {
+                showToast('비밀번호는 4자리 이상 입력해 주세요.');
+                return;
+            }
+
+            // 최초 접속: 개인 비밀번호 신규 등록
+            if (!student.pin) {
+                await syncStateToCloud((state) => {
+                    const target = state.students.find(s => s.id === selectedId);
+                    if (target && !target.pin) {
+                        target.pin = inputPin;
+                    }
+                });
+                currentStudentId = selectedId;
+                authenticatedStudentId = selectedId;
+                document.getElementById('studentLoginPinInput').value = '';
+                showToast(`${student.name}님의 개인 비밀번호가 설정되었습니다!`);
+                renderAll();
+                return;
+            }
+
+            // 기존 비밀번호 검증
+            if (student.pin === inputPin) {
+                currentStudentId = selectedId;
+                authenticatedStudentId = selectedId;
+                document.getElementById('studentLoginPinInput').value = '';
+                showToast(`${student.name}님 환영합니다!`);
+                renderAll();
+            } else {
+                showToast('비밀번호가 일치하지 않습니다. 다시 확인해 주세요!');
+                document.getElementById('studentLoginPinInput').value = '';
+                document.getElementById('studentLoginPinInput').focus();
+            }
+        }
+
+        function logoutStudent() {
+            authenticatedStudentId = null;
+            document.getElementById('studentLoginPinInput').value = '';
+            showToast('로그아웃되었습니다. 다음 친구가 로그인할 수 있습니다.');
+            renderAll();
         }
 
         function getCurrentStudent() {
-            return appState.students.find(s => s.id === currentStudentId) || appState.students[0];
+            const targetId = authenticatedStudentId || currentStudentId;
+            return appState.students.find(s => s.id === targetId) || appState.students[0];
         }
 
         // 학생용 대시보드 렌더링
@@ -1046,7 +1185,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isInstallment ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">
-                                    ${item.productName} (${Math.round(item.rate * 100)}%)
+                                    ${item.productName} (${Number((item.rate * 100).toFixed(2))}%)
                                 </span>
                                 <p class="text-xs text-slate-500 mt-1">원금 <strong class="text-slate-800">${formatMoney(item.principal)}원</strong> → 예상 <strong class="text-blue-600">${formatMoney(totalReturn)}원</strong></p>
                             </div>
@@ -1519,11 +1658,11 @@
 
         function updateInterestPreview() {
             const amount = Number(document.getElementById('savingsAmountInput').value) || 0;
-            const rate = selectedProductType === 'deposit' ? 0.10 : 0.15;
+            const rate = selectedProductType === 'deposit' ? 0.028 : 0.03;
             const interest = Math.round(amount * rate);
             const total = amount + interest;
 
-            document.getElementById('previewRateText').textContent = `${Math.round(rate * 100)}%`;
+            document.getElementById('previewRateText').textContent = `${Number((rate * 100).toFixed(2))}%`;
             document.getElementById('previewInterestText').textContent = `+${formatMoney(interest)}원`;
             document.getElementById('previewTotalText').textContent = `${formatMoney(total)}원`;
         }
@@ -1542,8 +1681,8 @@
             }
 
             const isDeposit = selectedProductType === 'deposit';
-            const productName = isDeposit ? '튼튼 정기예금' : '꿈나무 자유적금';
-            const rate = isDeposit ? 0.10 : 0.15;
+            const productName = isDeposit ? '튼튼 정기예금' : '꿈나무 정기적금';
+            const rate = isDeposit ? 0.028 : 0.03;
             const timeStr = getCurrentTimeStr();
             const nowId = Date.now();
 
@@ -1609,12 +1748,12 @@
                     type: 'out',
                     amount: addAmount,
                     counterparty: savItem.productName,
-                    memo: '자유적금 추가 저축',
+                    memo: '정기적금 추가 납입',
                     timestamp: timeStr
                 });
             });
 
-            showToast('자유적금에 5,000원을 추가로 저축했습니다!');
+            showToast('꿈나무 정기적금에 5,000원을 추가로 납입했습니다!');
         }
 
         // 예금/적금 해지 (만기 해지 시 이자 지급, 중도 해지 시 원금만 반환)
@@ -1881,6 +2020,7 @@
         function setTeacherMode(active) {
             isTeacherMode = active;
             const studentView = document.getElementById('studentView');
+            const studentLoginView = document.getElementById('studentLoginView');
             const teacherView = document.getElementById('teacherView');
             const selectorBar = document.getElementById('studentSelectorBar');
             const modeBtn = document.getElementById('modeToggleBtn');
@@ -1889,6 +2029,7 @@
 
             if (isTeacherMode) {
                 studentView.classList.add('hidden');
+                studentLoginView.classList.add('hidden');
                 teacherView.classList.remove('hidden');
                 selectorBar.classList.add('hidden');
                 modeBtn.className = 'px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 hover:bg-amber-200 transition flex items-center gap-1';
@@ -1897,12 +2038,15 @@
                 renderTeacherDashboard();
             } else {
                 teacherView.classList.add('hidden');
-                studentView.classList.remove('hidden');
-                selectorBar.classList.remove('hidden');
                 modeBtn.className = 'px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center gap-1';
                 modeBtnText.textContent = '선생님 모드';
                 modeBtnIcon.setAttribute('data-lucide', 'lock');
-                renderStudentDashboard();
+                if (authenticatedStudentId) {
+                    showAuthenticatedStudentScreen();
+                    renderStudentDashboard();
+                } else {
+                    showStudentLoginScreen();
+                }
             }
             lucide.createIcons();
         }
@@ -1969,13 +2113,21 @@
             listEl.innerHTML = appState.students.map(s => `
                 <div class="py-2.5 flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-bold text-slate-800">${s.name}</p>
+                        <div class="flex items-center gap-1.5">
+                            <p class="text-sm font-bold text-slate-800">${s.name}</p>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded ${s.pin ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'} font-semibold">
+                                ${s.pin ? '비번설정됨' : '미설정'}
+                            </span>
+                        </div>
                         <p class="text-[11px] text-slate-400 font-mono">${s.accountNumber}</p>
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1">
                         <span class="text-sm font-extrabold text-blue-600 mr-1">${formatMoney(s.balance)}원</span>
                         <button onclick="inspectStudent('${s.id}')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-md font-semibold">
                             통장보기
+                        </button>
+                        <button onclick="resetStudentPin('${s.id}')" title="학생 비밀번호 초기화" class="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-1.5 py-1 rounded-md font-semibold">
+                            비번초기화
                         </button>
                         <button onclick="deleteStudent('${s.id}')" title="학생 삭제" class="text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-600 p-1 rounded-md transition">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -2013,7 +2165,20 @@
         // 교사가 특정 학생 통장으로 바로 전환해 보기
         function inspectStudent(studentId) {
             currentStudentId = studentId;
+            authenticatedStudentId = studentId;
             setTeacherMode(false);
+        }
+
+        // 교사가 학생 개인 비밀번호 초기화 (분실 시)
+        async function resetStudentPin(studentId) {
+            const target = appState.students.find(s => s.id === studentId);
+            await syncStateToCloud((state) => {
+                const stu = state.students.find(s => s.id === studentId);
+                if (stu) {
+                    delete stu.pin;
+                }
+            });
+            showToast(`${target ? target.name : '학생'}의 비밀번호가 초기화되었습니다. 다음 접속 시 새로 설정할 수 있습니다.`);
         }
 
         // 교사 일괄/개별 입출금 실행
@@ -2095,7 +2260,7 @@
                 state.students.push({
                     id: newId,
                     name: name,
-                    accountNumber: `1004-01-${nextNum}`,
+                    accountNumber: `1004-52-${nextNum}`,
                     balance: initBal
                 });
 
@@ -2158,7 +2323,7 @@
                     state.students.push({
                         id: newId,
                         name: name,
-                        accountNumber: `1004-01-${numStr}`,
+                        accountNumber: `1004-52-${numStr}`,
                         balance: initBal
                     });
 
@@ -2218,6 +2383,7 @@
                 state.transactions = fresh.transactions;
             });
             currentStudentId = 'stu_1';
+            authenticatedStudentId = null;
             showToast('모든 계좌와 주식·거래 내역이 초기 상태로 복구되었습니다.');
         }
 
@@ -2227,7 +2393,9 @@
 
         // module 스크립트이므로 HTML onclick에서 접근 가능하도록 window에 함수 등록
         Object.assign(window, {
-            switchStudent,
+            onLoginStudentSelectChange,
+            handleStudentLogin,
+            logoutStudent,
             copyAccountNumber,
             openTransferModal,
             addTransferAmount,
@@ -2262,6 +2430,7 @@
             setAdminActionType,
             fillAdminPreset,
             inspectStudent,
+            resetStudentPin,
             executeAdminTransaction,
             openAddStudentModal,
             addNewStudent,

@@ -329,16 +329,28 @@
                 </div>
 
                 <!-- 예금/적금 만기 일괄 승인 (교사용 금융 통제) -->
-                <div class="bg-amber-50/70 rounded-2xl border border-amber-200 p-4 shadow-sm flex items-center justify-between gap-3">
-                    <div>
-                        <h3 class="font-bold text-amber-950 text-xs flex items-center gap-1">
-                            <i data-lucide="calendar-check" class="w-4 h-4 text-amber-600"></i> 학급 예·적금 만기 도래 처리
-                        </h3>
-                        <p class="text-[11px] text-amber-800/80 mt-0.5">가입 중인 학생들의 통장을 만기 상태로 바꿔 이자를 수령하게 합니다.</p>
+                <div class="bg-amber-50/70 rounded-2xl border border-amber-200 p-4 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-amber-950 text-xs flex items-center gap-1">
+                                <i data-lucide="calendar-check" class="w-4 h-4 text-amber-600"></i> 학급 예·적금 만기 도래 처리
+                            </h3>
+                            <p class="text-[11px] text-amber-800/80 mt-0.5">가입 일시를 확인하고 학생별 만기일을 지정하거나 전체 만기 승인할 수 있습니다.</p>
+                        </div>
+                        <button onclick="matureAllSavings()" class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition active:scale-95">
+                            전체 만기 승인
+                        </button>
                     </div>
-                    <button onclick="matureAllSavings()" class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition active:scale-95">
-                        전체 만기 승인
-                    </button>
+
+                    <!-- 학생별 예·적금 가입 현황 및 개별 만기일 설정 목록 -->
+                    <div class="border-t border-amber-200/80 pt-3">
+                        <p class="text-[11px] font-bold text-amber-900 mb-2 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> 학생별 예·적금 가입 내역 및 만기일 설정
+                        </p>
+                        <div id="adminSavingsList" class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                            <!-- JS로 학생별 예적금 목록 렌더링 -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 학급 주식 시장 주가 변동 & 경제 뉴스 발표 (교사용 투자 통제) -->
@@ -955,6 +967,32 @@
             return `${hh}:${mm}`;
         }
 
+        function getCurrentDateTimeStr() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return `${month}/${day} ${hh}:${mm}`;
+        }
+
+        function getTodayIsoDateStr() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function isSavingsMatured(item) {
+            if (!item) return false;
+            if (item.status === 'matured') return true;
+            if (item.maturityDate) {
+                return getTodayIsoDateStr() >= item.maturityDate;
+            }
+            return false;
+        }
+
         function showToast(msg) {
             const box = document.getElementById('toastBox');
             const msgEl = document.getElementById('toastMessage');
@@ -1177,19 +1215,22 @@
             listEl.innerHTML = mySavings.map(item => {
                 const expectedInterest = Math.round(item.principal * item.rate);
                 const totalReturn = item.principal + expectedInterest;
-                const isMatured = item.status === 'matured';
+                const isMatured = isSavingsMatured(item);
                 const isInstallment = item.productType === 'installment';
+                const joinedLabel = item.joinedAt || item.createdAt || '오늘';
+                const maturityLabel = item.maturityDate ? `만기일 ${item.maturityDate}` : '만기일 미지정';
 
                 return `
                     <div class="bg-white p-3 rounded-xl border ${isMatured ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-amber-200/70'} space-y-2">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between gap-2">
                             <div>
                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isInstallment ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">
                                     ${item.productName} (${Number((item.rate * 100).toFixed(2))}%)
                                 </span>
-                                <p class="text-xs text-slate-500 mt-1">원금 <strong class="text-slate-800">${formatMoney(item.principal)}원</strong> → 예상 <strong class="text-blue-600">${formatMoney(totalReturn)}원</strong></p>
+                                <p class="text-[10px] text-slate-400 mt-1">가입: ${joinedLabel} · ${maturityLabel}</p>
+                                <p class="text-xs text-slate-500 mt-0.5">원금 <strong class="text-slate-800">${formatMoney(item.principal)}원</strong> → 예상 <strong class="text-blue-600">${formatMoney(totalReturn)}원</strong></p>
                             </div>
-                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${isMatured ? 'bg-emerald-500 text-white animate-bounce' : 'bg-amber-100 text-amber-700'}">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${isMatured ? 'bg-emerald-500 text-white animate-bounce' : 'bg-amber-100 text-amber-700'}">
                                 ${isMatured ? '🎉 만기 도래!' : '저축 중'}
                             </span>
                         </div>
@@ -1684,6 +1725,7 @@
             const productName = isDeposit ? '튼튼 정기예금' : '꿈나무 정기적금';
             const rate = isDeposit ? 0.028 : 0.03;
             const timeStr = getCurrentTimeStr();
+            const joinedAtStr = getCurrentDateTimeStr();
             const nowId = Date.now();
 
             closeModal('savingsModal');
@@ -1704,6 +1746,8 @@
                     principal: amount,
                     rate: rate,
                     status: 'active', // 'active' | 'matured'
+                    joinedAt: joinedAtStr,
+                    maturityDate: '', // 선생님이 학생별로 개별 지정 가능
                     createdAt: timeStr
                 });
 
@@ -1847,6 +1891,107 @@
             });
 
             showToast(`${activeCount}건의 예·적금이 만기 처리되었습니다! 학생들이 이자를 수령할 수 있습니다.`);
+        }
+
+        // 선생님 모드: 학생별 예·적금 가입 내역 렌더링 및 개별 만기일 설정
+        function renderTeacherSavingsManager() {
+            const container = document.getElementById('adminSavingsList');
+            if (!container) return;
+
+            const savingsList = appState.savings || [];
+            if (savingsList.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-amber-800/70 bg-white/70 rounded-xl p-3 text-center">현재 가입된 예·적금 상품이 없습니다.</p>`;
+                return;
+            }
+
+            container.innerHTML = savingsList.map(item => {
+                const stu = appState.students.find(s => s.id === item.studentId);
+                const stuName = stu ? stu.name : (item.studentName || '학생');
+                const matured = isSavingsMatured(item);
+                const joinedLabel = item.joinedAt || item.createdAt || '-';
+                const dateVal = item.maturityDate || getTodayIsoDateStr();
+
+                return `
+                    <div class="bg-white rounded-xl border border-amber-200/90 p-2.5 space-y-2 text-xs">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <p class="font-bold text-slate-800">
+                                    ${stuName} <span class="text-slate-400 font-medium">·</span>
+                                    <span class="text-blue-700">${item.productName}</span>
+                                </p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">
+                                    원금 <strong>${formatMoney(item.principal)}원</strong> · 가입일시: <span class="font-mono text-slate-700">${joinedLabel}</span>
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${matured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}">
+                                ${matured ? '만기 도래' : '진행 중'}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
+                            <span class="text-[10px] font-semibold text-slate-500">만기일:</span>
+                            <input type="date" id="matDate_${item.id}" value="${dateVal}" class="border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                            <button type="button" onclick="setIndividualMaturityDate('${item.id}')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-2 py-1 rounded-lg text-[10px] transition">
+                                만기일 저장
+                            </button>
+                            <button type="button" onclick="toggleIndividualMaturityStatus('${item.id}')" class="ml-auto ${matured ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'} font-bold px-2 py-1 rounded-lg text-[10px] transition">
+                                ${matured ? '진행중으로 변경' : '즉시 만기'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function setIndividualMaturityDate(savingsId) {
+            const dateInput = document.getElementById(`matDate_${savingsId}`);
+            const chosenDate = dateInput ? dateInput.value : '';
+            if (!chosenDate) {
+                showToast('만기일을 선택해 주세요.');
+                return;
+            }
+
+            const todayStr = getTodayIsoDateStr();
+            await syncStateToCloud((state) => {
+                const target = (state.savings || []).find(s => s.id === savingsId);
+                if (!target) return;
+                target.maturityDate = chosenDate;
+                // 지정된 만기일이 오늘이거나 이미 지난 날짜면 즉시 만기 상태로 전환, 미래 날짜면 진행 중으로 설정
+                target.status = chosenDate <= todayStr ? 'matured' : 'active';
+            });
+
+            showToast(`만기일이 ${chosenDate}로 설정되었습니다!`);
+        }
+
+        async function toggleIndividualMaturityStatus(savingsId) {
+            const todayStr = getTodayIsoDateStr();
+            let nextStatusLabel = '';
+
+            await syncStateToCloud((state) => {
+                const target = (state.savings || []).find(s => s.id === savingsId);
+                if (!target) return;
+                const currentlyMatured = isSavingsMatured(target);
+                if (currentlyMatured) {
+                    target.status = 'active';
+                    // 진행중으로 되돌릴 때 만기일이 오늘 이전이면 내일 날짜로 갱신해 자동 만기 방지
+                    if (!target.maturityDate || target.maturityDate <= todayStr) {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        const yyyy = tomorrow.getFullYear();
+                        const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                        const dd = String(tomorrow.getDate()).padStart(2, '0');
+                        target.maturityDate = `${yyyy}-${mm}-${dd}`;
+                    }
+                    nextStatusLabel = '진행 중';
+                } else {
+                    target.status = 'matured';
+                    target.maturityDate = todayStr;
+                    nextStatusLabel = '만기 도래';
+                }
+            });
+
+            if (nextStatusLabel) {
+                showToast(`해당 예·적금이 '${nextStatusLabel}' 상태로 변경되었습니다.`);
+            }
         }
 
         // 거래 내역 필터 변경
@@ -2107,6 +2252,9 @@
                     `<option value="${stk.id}">${stk.name} (${formatMoney(stk.price)}원)</option>`
                 ).join('');
             }
+
+            // 학생별 예·적금 가입 일시 및 만기일 설정 목록 렌더링
+            renderTeacherSavingsManager();
 
             // 학생 계좌 현황 리스트
             const listEl = document.getElementById('adminStudentList');
@@ -2410,6 +2558,8 @@
             claimSavings,
             payDemandDepositInterest,
             matureAllSavings,
+            setIndividualMaturityDate,
+            toggleIndividualMaturityStatus,
             openStockModal,
             selectStockForOrder,
             setStockOrderSide,

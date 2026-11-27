@@ -254,9 +254,12 @@
                 
                 <!-- 선생님 배너 -->
                 <div class="teacher-gradient rounded-2xl p-5 text-white shadow-md">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold">교사 관리자 모드</span>
-                        <div class="flex items-center gap-1.5">
+                    <div class="flex items-center justify-between mb-2 gap-1.5">
+                        <span class="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold shrink-0">교사 관리자 모드</span>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <button onclick="copyClassShareLink()" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 shadow-xs transition">
+                                <i data-lucide="share-2" class="w-3 h-3"></i> 학생 배포 링크 복사
+                            </button>
                             <button onclick="openChangePinModal()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-lg font-medium flex items-center gap-1 transition">
                                 <i data-lucide="key-round" class="w-3 h-3"></i> 비번변경
                             </button>
@@ -266,7 +269,7 @@
                         </div>
                     </div>
                     <h2 class="text-lg font-bold">학급 은행 중앙 통제실</h2>
-                    <p class="text-xs text-slate-300 mt-1">모든 학생의 디벗과 실시간으로 연동되어 잔액과 거래 내역이 자동 저장됩니다.</p>
+                    <p class="text-xs text-slate-300 mt-1">명단 등록 후 상단의 <strong>[학생 배포 링크 복사]</strong>를 눌러 공유하면 모든 디벗에 우리반 명단이 자동 반영됩니다.</p>
                 </div>
 
                 <!-- 일괄/개별 입출금 처리 폼 -->
@@ -870,8 +873,99 @@
             } catch (_e) {}
         }
 
+        // URL 해시(#roster=...)에 담긴 선생님 배포 명단 불러오기
+        function applySharedRosterFromUrl() {
+            try {
+                const hash = window.location.hash || '';
+                if (!hash.startsWith('#roster=')) return false;
+
+                const encoded = hash.slice('#roster='.length);
+                const jsonStr = decodeURIComponent(escape(atob(encoded)));
+                const payload = JSON.parse(jsonStr);
+
+                if (!payload || !Array.isArray(payload.students) || payload.students.length === 0) {
+                    return false;
+                }
+
+                // 기존에 이미 같은 배포 버전(ver)을 적용한 기기라면 학생의 진행 데이터 보존
+                const appliedVer = localStorage.getItem(STORAGE_KEY + '_ver');
+                if (payload.ver && appliedVer === String(payload.ver) && localStorage.getItem(STORAGE_KEY)) {
+                    return false;
+                }
+
+                const fresh = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                fresh.teacherPin = payload.teacherPin || '1234';
+                fresh.students = payload.students.map((s, idx) => ({
+                    id: s.id || `stu_${idx + 1}`,
+                    name: s.name,
+                    accountNumber: s.accountNumber || `1004-52-${String(idx + 1).padStart(4, '0')}`,
+                    balance: Number(s.balance) || 0,
+                    ...(s.pin ? { pin: s.pin } : {})
+                }));
+
+                const timeStr = getCurrentTimeStr();
+                fresh.transactions = fresh.students
+                    .filter(s => s.balance > 0)
+                    .map((s, idx) => ({
+                        id: `tx_init_shared_${idx}`,
+                        studentId: s.id,
+                        studentName: s.name,
+                        type: 'in',
+                        amount: s.balance,
+                        counterparty: '우리반 중앙은행',
+                        memo: '학기 초 기본 지원금',
+                        timestamp: timeStr
+                    }));
+
+                appState = fresh;
+                currentStudentId = appState.students[0].id;
+                authenticatedStudentId = null;
+                saveLocalFallback();
+                if (payload.ver) {
+                    localStorage.setItem(STORAGE_KEY + '_ver', String(payload.ver));
+                }
+                return true;
+            } catch (_e) {
+                return false;
+            }
+        }
+
+        // 선생님 모드: 현재 등록된 우리반 명단과 잔액을 담은 학생용 배포 링크 복사
+        function copyClassShareLink() {
+            try {
+                const payload = {
+                    ver: Date.now(),
+                    teacherPin: appState.teacherPin || '1234',
+                    students: appState.students.map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        accountNumber: s.accountNumber,
+                        balance: s.balance
+                    }))
+                };
+                const jsonStr = JSON.stringify(payload);
+                const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+                const baseUrl = window.location.href.split('#')[0];
+                const shareUrl = `${baseUrl}#roster=${encoded}`;
+
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+
+                showToast(`우리반 명단(${appState.students.length}명)이 포함된 배포 링크가 복사되었습니다!`);
+            } catch (_e) {
+                showToast('배포 링크 생성 중 오류가 발생했습니다.');
+            }
+        }
+
         async function initCloudSync() {
-            loadLocalFallback();
+            const appliedFromUrl = applySharedRosterFromUrl();
+            if (!appliedFromUrl) {
+                loadLocalFallback();
+            }
             try {
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                     const firebaseConfig = JSON.parse(__firebase_config);
@@ -2541,6 +2635,7 @@
 
         // module 스크립트이므로 HTML onclick에서 접근 가능하도록 window에 함수 등록
         Object.assign(window, {
+            copyClassShareLink,
             onLoginStudentSelectChange,
             handleStudentLogin,
             logoutStudent,

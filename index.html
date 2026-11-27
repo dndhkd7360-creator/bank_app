@@ -1012,8 +1012,21 @@
                 loadLocalFallback();
             }
             try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
+                const embeddedFirebaseConfig = {
+                    apiKey: "AIzaSyBS08ED6e99QVP1B8VfWlKisFckj04ldrw",
+                    authDomain: "bank-app-9578a.firebaseapp.com",
+                    projectId: "bank-app-9578a",
+                    storageBucket: "bank-app-9578a.firebasestorage.app",
+                    messagingSenderId: "183862970853",
+                    appId: "1:183862970853:web:7c4d6b80796b70e27d870c",
+                    measurementId: "G-S49BGLJ2KG"
+                };
+
+                const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+                    ? JSON.parse(__firebase_config)
+                    : embeddedFirebaseConfig;
+
+                if (firebaseConfig && firebaseConfig.apiKey) {
                     const app = initializeApp(firebaseConfig);
                     const auth = getAuth(app);
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {

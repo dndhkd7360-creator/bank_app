@@ -122,6 +122,12 @@
                     <button id="studentLoginSubmitBtn" onclick="handleStudentLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-md transition active:scale-98">
                         내 통장 열기
                     </button>
+
+                    <div class="pt-2 border-t border-slate-100">
+                        <button type="button" onclick="openImportRosterModal()" class="text-[11px] text-slate-400 hover:text-blue-600 font-semibold underline">
+                            우리반 명단이 안 보이나요? (배포 링크/코드 입력)
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -782,6 +788,25 @@
             </div>
         </div>
 
+        <!-- 10. 학생용 배포 링크/코드 직접 입력 모달 -->
+        <div id="importRosterModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 space-y-4 animate-slide-up shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800">우리반 명단 불러오기</h3>
+                    <button onclick="closeModal('importRosterModal')" class="p-1 rounded-full hover:bg-slate-100 text-slate-500">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    선생님이 보내주신 <strong>배포 링크 전체</strong>를 아래에 붙여넣으면 우리반 이름으로 바로 바뀝니다.
+                </p>
+                <textarea id="importRosterInput" rows="3" placeholder="https://...#roster=..." class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <button onclick="applyManualRosterLink()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm">
+                    우리반 명단 적용하기
+                </button>
+            </div>
+        </div>
+
         <!-- 커스텀 토스트 알림창 (alert 대체) -->
         <div id="toastBox" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 transition-all">
             <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
@@ -807,24 +832,24 @@
         const DEFAULT_DATA = {
             teacherPin: '1234',
             students: [
-                { id: 'stu_1', name: '김민준', accountNumber: '1004-52-0001', balance: 30000 },
-                { id: 'stu_2', name: '이서연', accountNumber: '1004-52-0002', balance: 35000 },
-                { id: 'stu_3', name: '박도윤', accountNumber: '1004-52-0003', balance: 28000 },
-                { id: 'stu_4', name: '최지우', accountNumber: '1004-52-0004', balance: 42000 },
-                { id: 'stu_5', name: '정하준', accountNumber: '1004-52-0005', balance: 30000 }
+                { id: 'stu_1', name: '원', accountNumber: '1004-52-0001', balance: 100000 },
+                { id: 'stu_2', name: '개똥이', accountNumber: '1004-52-0002', balance: 100000 },
+                { id: 'stu_3', name: '로또당첨', accountNumber: '1004-52-0003', balance: 100000 },
+                { id: 'stu_4', name: '브롤', accountNumber: '1004-52-0004', balance: 100000 },
+                { id: 'stu_5', name: '흑돼지', accountNumber: '1004-52-0005', balance: 100000 },
+                { id: 'stu_6', name: '스타즈', accountNumber: '1004-52-0006', balance: 100000 }
             ],
             savings: [], // 가입된 예금/적금 상품 목록
             stocks: JSON.parse(JSON.stringify(DEFAULT_STOCKS)), // 5개 분야 상장 주식
             holdings: [], // 학생별 보유 주식 { studentId, stockId, quantity, avgPrice }
             latestStockNews: '우리반 증권시장이 개장했습니다! 5개 대표 기업의 주가를 확인해 보세요.',
             transactions: [
-                { id: 'tx_1', studentId: 'stu_1', type: 'in', amount: 30000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
-                { id: 'tx_2', studentId: 'stu_2', type: 'in', amount: 30000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
-                { id: 'tx_3', studentId: 'stu_2', type: 'in', amount: 5000, counterparty: '선생님', memo: '학급 도우미 활동 급여', timestamp: '10:30' },
-                { id: 'tx_4', studentId: 'stu_3', type: 'in', amount: 30000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
-                { id: 'tx_5', studentId: 'stu_3', type: 'out', amount: 2000, counterparty: '우리반 매점', memo: '학용품 구매', timestamp: '11:15' },
-                { id: 'tx_6', studentId: 'stu_4', type: 'in', amount: 42000, counterparty: '우리반 중앙은행', memo: '초기 지원금 및 저축왕 상금', timestamp: '09:00' },
-                { id: 'tx_7', studentId: 'stu_5', type: 'in', amount: 30000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' }
+                { id: 'tx_1', studentId: 'stu_1', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
+                { id: 'tx_2', studentId: 'stu_2', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
+                { id: 'tx_3', studentId: 'stu_3', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
+                { id: 'tx_4', studentId: 'stu_4', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
+                { id: 'tx_5', studentId: 'stu_5', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' },
+                { id: 'tx_6', studentId: 'stu_6', type: 'in', amount: 100000, counterparty: '우리반 중앙은행', memo: '학기 초 기본 지원금', timestamp: '09:00' }
             ]
         };
 
@@ -843,7 +868,7 @@
         let isCloudReady = false;
         let db = null;
         let syncDocRef = null;
-        const STORAGE_KEY = 'smart_class_bank_state_v1';
+        const STORAGE_KEY = 'smart_class_bank_state_v2';
 
         function updateSyncBadge(connected, labelText) {
             const el = document.getElementById('syncStatusText');
@@ -874,12 +899,12 @@
         }
 
         // URL 해시(#roster=...)에 담긴 선생님 배포 명단 불러오기
-        function applySharedRosterFromUrl() {
+        function parseAndApplyRosterHash(hashStr, forceApply = false) {
             try {
-                const hash = window.location.hash || '';
-                if (!hash.startsWith('#roster=')) return false;
+                const idxHash = (hashStr || '').indexOf('#roster=');
+                if (idxHash === -1) return false;
 
-                const encoded = hash.slice('#roster='.length);
+                const encoded = hashStr.slice(idxHash + '#roster='.length).trim();
                 const jsonStr = decodeURIComponent(escape(atob(encoded)));
                 const payload = JSON.parse(jsonStr);
 
@@ -889,7 +914,7 @@
 
                 // 기존에 이미 같은 배포 버전(ver)을 적용한 기기라면 학생의 진행 데이터 보존
                 const appliedVer = localStorage.getItem(STORAGE_KEY + '_ver');
-                if (payload.ver && appliedVer === String(payload.ver) && localStorage.getItem(STORAGE_KEY)) {
+                if (!forceApply && payload.ver && appliedVer === String(payload.ver) && localStorage.getItem(STORAGE_KEY)) {
                     return false;
                 }
 
@@ -927,6 +952,26 @@
                 return true;
             } catch (_e) {
                 return false;
+            }
+        }
+
+        function applySharedRosterFromUrl() {
+            return parseAndApplyRosterHash(window.location.hash || '', false);
+        }
+
+        function openImportRosterModal() {
+            document.getElementById('importRosterInput').value = '';
+            document.getElementById('importRosterModal').classList.remove('hidden');
+        }
+
+        function applyManualRosterLink() {
+            const raw = document.getElementById('importRosterInput').value.trim();
+            if (parseAndApplyRosterHash(raw, true)) {
+                closeModal('importRosterModal');
+                renderAll();
+                showToast(`우리반 명단(${appState.students.length}명)이 성공적으로 적용되었습니다!`);
+            } else {
+                showToast('올바른 배포 링크가 아닙니다. 선생님께 받은 링크 전체를 붙여넣어 주세요.');
             }
         }
 
@@ -2636,6 +2681,8 @@
         // module 스크립트이므로 HTML onclick에서 접근 가능하도록 window에 함수 등록
         Object.assign(window, {
             copyClassShareLink,
+            openImportRosterModal,
+            applyManualRosterLink,
             onLoginStudentSelectChange,
             handleStudentLogin,
             logoutStudent,
